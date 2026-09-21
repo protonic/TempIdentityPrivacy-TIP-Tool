@@ -1,0 +1,167 @@
+# Balanced .htaccess Security Configuration
+
+# Last Updated: January 4, 2026
+
+# Features: Security headers, basic attack prevention, file protection, ModSecurity WAF
+
+# Compatible with XAMPP development environment
+
+RewriteEngine On
+
+# HIDE .PHP EXTENSION
+# Canonicalize DirectoryIndex requests first, so /index, /index.php, /admin/index(.php)
+# collapse to their parent directory (e.g. / or /admin/) regardless of install depth
+RewriteCond %{REQUEST_METHOD} GET
+RewriteCond %{THE_REQUEST} \s/(.*/)?index(\.php)?[\s?] [NC]
+RewriteRule ^ /%1 [R=301,L]
+
+# Redirect direct requests for a .php URL to its extension-less equivalent
+# (skips the internal includes/handlers API endpoints, which are called via fetch()
+# with their .php name and are never shown to a visitor)
+RewriteCond %{REQUEST_METHOD} GET
+RewriteCond %{THE_REQUEST} ^[A-Z]{3,9}\s/(.+)\.php[\s?] [NC]
+RewriteCond %{REQUEST_URI} !/includes/ [NC]
+RewriteRule ^ /%1 [R=301,L]
+
+# Internally serve the matching .php file for extension-less requests
+RewriteCond %{REQUEST_FILENAME} !-d
+RewriteCond %{REQUEST_FILENAME}\.php -f
+RewriteRule ^(.+)$ $1.php [L]
+
+# MODSECURITY WEB APPLICATION FIREWALL (Optional - may not be available in XAMPP)
+
+<IfModule mod_security2.c>
+    # Enable ModSecurity in detection-only mode for development
+    SecRuleEngine DetectionOnly
+    
+    # Enable request body access
+    SecRequestBodyAccess On
+    SecRequestBodyLimit 13107200
+    SecRequestBodyNoFilesLimit 131072
+    
+    # Disable response body access for performance
+    SecResponseBodyAccess Off
+    
+    # Set audit logging for development
+    SecAuditEngine RelevantOnly
+    SecAuditLogParts ABIJDEFHZ
+    SecAuditLogType Serial
+    
+    # Whitelist admin directory from SQL injection rules (trusted authenticated area)
+    # Matches both production (/admin/) and local dev (/temp-email-service/admin/)
+    SecRule REQUEST_URI "/admin/" "id:3999,phase:1,nolog,allow,ctl:ruleEngine=Off"
+    
+    # Development Mode: Log attacks but don't block (DetectionOnly)
+    # Core rules still active for testing
+    SecRule REQUEST_METHOD "^(HEAD|TRACE|DELETE|TRACK)" "id:4000,phase:1,log,status:200,msg:'Suspicious Method Detected (Dev Mode)'"
+    SecRule ARGS "(union|select|insert|update|delete|drop)" "id:4001,phase:2,log,status:200,msg:'Possible SQL Injection (Dev Mode)'"
+    SecRule ARGS "(\<script|iframe|object|embed)" "id:4002,phase:2,log,status:200,msg:'Possible XSS Attack (Dev Mode)'"
+</IfModule>
+
+# SECURITY HEADERS
+
+# Prevent clickjacking
+
+Header always append X-Frame-Options DENY
+
+# Prevent MIME type sniffing
+
+Header always set X-Content-Type-Options nosniff
+
+# Enable XSS protection
+
+Header always set X-XSS-Protection "1; mode=block"
+
+# Referrer Policy
+
+Header always set Referrer-Policy "strict-origin-when-cross-origin"
+Header always set X-Robots-Tag "noindex, nofollow, noarchive, nosnippet"
+Header always set Cache-Control "no-store, no-cache, must-revalidate, max-age=0"
+Header always set Pragma "no-cache"
+Header always set Expires "0"
+Header always set Permissions-Policy "geolocation=(), microphone=(), camera=(), payment=(), usb=()"
+Header always set Cross-Origin-Resource-Policy "same-origin"
+Header always set Cross-Origin-Opener-Policy "same-origin"
+
+# Content Security Policy - Comprehensive XSS Protection
+
+Header always set Content-Security-Policy "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; font-src 'self' data:; connect-src 'self'; frame-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none';"
+
+# BASIC ATTACK PREVENTION (Conservative approach)
+
+# Block obvious SQL injection attempts
+
+RewriteCond %{QUERY_STRING} (union.*select|select.*union) [NC]
+RewriteRule .\* - [F,L]
+
+# Block obvious XSS attempts
+
+RewriteCond %{QUERY*STRING} (\<|%3C).\_script.*(\>|%3E) [NC]
+RewriteRule .\* - [F,L]
+
+# Disable dangerous HTTP methods
+
+RewriteCond %{REQUEST_METHOD} ^(TRACE|TRACK)
+RewriteRule .\* - [F]
+
+# FILE PROTECTION
+
+# Protect sensitive files
+
+<Files ~ "^\.">
+Order allow,deny
+Deny from all
+</Files>
+
+# Block specific file types (conservative list)
+
+<FilesMatch "\.(env|sql|bak|backup|htaccess|htpasswd)$">
+Order allow,deny
+Deny from all
+</FilesMatch>
+
+# Only enable specific routes, not catch-all
+
+# Disable directory browsing
+
+Options -Indexes
+
+# Set charset for CSS and JavaScript files
+
+<IfModule mod_mime.c>
+    AddType 'text/css; charset=utf-8' .css
+    AddType 'application/javascript; charset=utf-8' .js
+</IfModule>
+
+# Custom error pages
+
+ErrorDocument 403 /temp-email-service/error-pages/403.html
+ErrorDocument 404 /temp-email-service/error-pages/404.html
+ErrorDocument 500 /temp-email-service/error-pages/500.html
+
+# Gzip compression for better performance
+
+<IfModule mod_deflate.c>
+    AddOutputFilterByType DEFLATE text/plain
+    AddOutputFilterByType DEFLATE text/html
+    AddOutputFilterByType DEFLATE text/xml
+    AddOutputFilterByType DEFLATE text/css
+    AddOutputFilterByType DEFLATE application/xml
+    AddOutputFilterByType DEFLATE application/xhtml+xml
+    AddOutputFilterByType DEFLATE application/rss+xml
+    AddOutputFilterByType DEFLATE application/javascript
+    AddOutputFilterByType DEFLATE application/x-javascript
+</IfModule>
+
+# Browser caching for better performance
+
+<IfModule mod_expires.c>
+    ExpiresActive on
+    ExpiresByType text/css "access plus 1 month"
+    ExpiresByType application/javascript "access plus 1 month"
+    ExpiresByType image/png "access plus 1 month"
+    ExpiresByType image/jpg "access plus 1 month"
+    ExpiresByType image/jpeg "access plus 1 month"
+    ExpiresByType image/gif "access plus 1 month"
+    ExpiresByType image/ico "access plus 1 month"
+</IfModule>

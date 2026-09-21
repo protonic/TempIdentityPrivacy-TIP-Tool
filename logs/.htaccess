@@ -1,0 +1,3 @@
+# Deny all access to logs directory
+Order deny,allow
+Deny from all
