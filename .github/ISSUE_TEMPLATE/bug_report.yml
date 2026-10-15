@@ -1,0 +1,49 @@
+name: Bug report
+description: Something isn't working as documented
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for reporting. For security vulnerabilities, please do not use this form; see SECURITY.md.
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened?
+      description: What did you expect, and what did you see instead?
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      placeholder: |
+        1. ...
+        2. ...
+    validations:
+      required: true
+  - type: input
+    id: php
+    attributes:
+      label: PHP version
+      placeholder: "8.2.12"
+    validations:
+      required: true
+  - type: input
+    id: hosting
+    attributes:
+      label: Hosting / stack
+      description: For example Hostinger shared, XAMPP on Windows, Ubuntu + Apache.
+    validations:
+      required: true
+  - type: input
+    id: imap
+    attributes:
+      label: IMAP / mail provider
+      description: Only if the problem involves fetching mail.
+  - type: textarea
+    id: logs
+    attributes:
+      label: Relevant log output
+      description: From logs/error.log. Remove any passwords, hostnames or personal data first.
+      render: text

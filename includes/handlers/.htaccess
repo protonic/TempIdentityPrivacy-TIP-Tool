@@ -1,0 +1,13 @@
+# The parent includes/ directory is private by default. These are the explicit
+# AJAX entry points used by the public mailbox UI; each handler performs its
+# own method, CSRF, session, and IP-block checks.
+<IfModule mod_authz_core.c>
+    Require all granted
+</IfModule>
+
+# XAMPP also loads mod_access_compat, which the parent directory uses.
+# Keep the matching legacy directive here so this child directory overrides it.
+<IfModule mod_access_compat.c>
+    Order allow,deny
+    Allow from all
+</IfModule>

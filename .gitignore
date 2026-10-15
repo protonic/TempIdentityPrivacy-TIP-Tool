@@ -1,0 +1,11 @@
+# Deployment-specific config/cron folder name markers.
+# Written by setup.php at deploy time - each deployment can have its own
+# custom folder names, so these should not be tracked or committed.
+includes/config_folder_name.php
+includes/cron_folder_name.php
+/scripts
+# Local editor config and personal sample data - not part of the project
+.vscode/
+sql/backups/
+scripts
+scripts/*.php
