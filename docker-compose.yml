@@ -1,0 +1,55 @@
+# TIP Tool with Docker Compose.
+#   cp .env.example .env    # then fill in the values
+#   docker compose up -d
+#
+# To build from source instead of pulling the published image, run:
+#   docker compose up -d --build
+
+services:
+  app:
+    image: ghcr.io/protonic/tip-tool:${TIP_VERSION:-latest}
+    build: .
+    restart: unless-stopped
+    env_file: .env
+    ports:
+      - "${TIP_PORT:-8080}:80"
+    volumes:
+      - logs:/var/www/html/logs
+    depends_on:
+      db:
+        condition: service_healthy
+
+  cron:
+    image: ghcr.io/protonic/tip-tool:${TIP_VERSION:-latest}
+    restart: unless-stopped
+    env_file: .env
+    user: www-data
+    command: ["tip-cron"]
+    # The image's healthcheck probes Apache, which this container doesn't run.
+    healthcheck:
+      disable: true
+    volumes:
+      - logs:/var/www/html/logs
+    depends_on:
+      app:
+        condition: service_healthy
+
+  db:
+    image: mysql:8.4
+    restart: unless-stopped
+    environment:
+      MYSQL_DATABASE: ${DB_NAME:-tiptool}
+      MYSQL_USER: ${DB_USER:-tiptool}
+      MYSQL_PASSWORD: ${DB_PASS:?set DB_PASS in .env}
+      MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASS:?set DB_ROOT_PASS in .env}
+    volumes:
+      - db:/var/lib/mysql
+    healthcheck:
+      test: ["CMD-SHELL", "mysqladmin ping -h 127.0.0.1 -u root -p\"$$MYSQL_ROOT_PASSWORD\" --silent"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+volumes:
+  db:
+  logs:

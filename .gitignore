@@ -9,3 +9,6 @@ includes/cron_folder_name.php
 sql/backups/
 scripts
 scripts/*.php
+
+# Docker secrets - copy .env.example to .env
+.env

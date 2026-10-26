@@ -6,6 +6,7 @@
 ![PHP 8.1+](https://img.shields.io/badge/PHP-8.1%2B-777bb4.svg)
 ![Self-hosted](https://img.shields.io/badge/self--hosted-yes-blue.svg)
 ![Runs on shared hosting](https://img.shields.io/badge/runs%20on-shared%20hosting%20%7C%20XAMPP%20%7C%20LAMP-lightgrey.svg)
+[![Docker image](https://img.shields.io/badge/docker-ghcr.io%2Fprotonic%2Ftip--tool-2496ed.svg?logo=docker&logoColor=white)](docs/DOCKER.md)
 
 <p align="center">
   <img src="docs/screenshots/05-mailbox-inbox.png" alt="TIP Tool inbox showing spam received on a disposable address" width="49%">
@@ -49,6 +50,19 @@ git clone https://github.com/protonic/TempIdentityPrivacy-TIP-Tool.git
 2. Open `https://yourdomain.com/setup.php`, enter your database details and admin account, and run it. It imports the schema and writes the config for you.
 3. **Delete `setup.php`**, sign in at `/admin/login`, and add your catch-all IMAP mailbox under *Manage Domains*.
 4. Click *Generate address*, use it anywhere, and watch the mail arrive.
+
+### Or run it with Docker
+
+On a VPS or home server, one command starts the app, a MySQL database, and a background mail fetcher. The setup wizard isn't used: the schema and your first admin account are created from `.env` on first start.
+
+```bash
+git clone https://github.com/protonic/TempIdentityPrivacy-TIP-Tool.git
+cd TempIdentityPrivacy-TIP-Tool
+cp .env.example .env
+docker compose up -d
+```
+
+Fill in `.env` (database passwords, `CRON_SECRET_KEY`, admin account) before the last command, then open `http://localhost:8080/admin/login`. See [docs/DOCKER.md](docs/DOCKER.md) for HTTPS behind a reverse proxy, upgrades, and backups.
 
 Requirements, a Hostinger walkthrough, IIS notes, and cron setup are covered in the sections below. If you only want privacy for yourself you don't need a public server at all: see [Running This for Personal Identity Privacy](#running-this-for-personal-identity-privacy-no-public-hosting-or-multiple-mailboxes-needed).
 
@@ -417,6 +431,10 @@ logs/                 Runtime logs
 sql/                  Database installer
 index.php             Public homepage and mailbox UI
 setup.php             First-run wizard: generates tip-config/ and tip-cron/ (delete after use)
+Dockerfile            Docker image (PHP 8.3 + Apache + imap)
+docker-compose.yml    App, MySQL, and cron containers
+.env.example          Settings template for Docker
+docker/               Env-based config, cron scripts, and first-run bootstrap for the image
 ```
 
 Generated outside the web root by `setup.php`:

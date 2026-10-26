@@ -1,0 +1,14 @@
+.git
+.github
+.vscode
+docs
+logs/*
+!logs/.htaccess
+scripts
+sql/backups
+includes/config_folder_name.php
+includes/cron_folder_name.php
+*.bak
+*.md
+.env
+.env.*
